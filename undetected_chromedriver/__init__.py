@@ -47,6 +47,9 @@ class Chrome:
             )
         if not kwargs.get("options"):
             kwargs["options"] = ChromeOptions()
+        else:
+            usr_opts = kwargs["options"]
+            kwargs["options"] = ChromeOptions.from_existing(usr_opts)
         instance = object.__new__(_Chrome)
         instance.__init__(*args, **kwargs)
 
@@ -94,18 +97,28 @@ class Chrome:
 
 
 class ChromeOptions:
-    def __new__(cls, *args, **kwargs):
-        if not ChromeDriverManager.installed:
-            ChromeDriverManager(*args, **kwargs).install()
-        if not ChromeDriverManager.selenium_patched:
-            ChromeDriverManager(*args, **kwargs).patch_selenium_webdriver()
 
-        instance = object.__new__(_ChromeOptions)
-        instance.__init__()
-        instance.add_argument("start-maximized")
-        instance.add_experimental_option("excludeSwitches", ["enable-automation"])
-        instance.add_argument("--disable-blink-features=AutomationControlled")
-        return instance
+     def __new__(cls, *args, **kwargs):
+         if not ChromeDriverManager.installed:
+             ChromeDriverManager(*args, **kwargs).install()
+         if not ChromeDriverManager.selenium_patched:
+             ChromeDriverManager(*args, **kwargs).patch_selenium_webdriver()
+         instance = object.__new__(_ChromeOptions)
+         instance.__init__()
+         return ChromeOptions._add_options(instance)
+
+     @classmethod
+     def _add_options(cls, instance):
+         instance.add_argument("start-maximized")
+         instance.add_experimental_option("excludeSwitches", ["enable-automation"])
+         instance.add_argument("--disable-blink-features=AutomationControlled")
+         return instance
+ 
+    @classmethod
+     def from_existing(cls, opts: ChromeOptions):
+         cls._add_options(opts)
+         return opts
+
 
 
 class ChromeDriverManager(object):
